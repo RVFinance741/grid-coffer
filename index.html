@@ -1,0 +1,2691 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GridCoffer - PDF to Excel</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400&family=DM+Sans:wght@300;400;500&family=DM+Mono:wght@300;400&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+/* DARK MODE */
+[data-theme="dark"] {
+  --bg: #060e1a;
+  --surface: #0b1726;
+  --surface2: #0f2035;
+  --surface3: #08121f;
+  --border: #162540;
+  --border2: #1e3255;
+  --text: #ddeaf8;
+  --text2: #93b4d4;
+  --muted: #4f7499;
+  --muted2: #2f4f6f;
+  --gold: #5bc4d4;
+  --gold-dim: #2a8a9e;
+  --gold-glow: rgba(91, 196, 212, 0.07);
+  --gold-subtle: rgba(91, 196, 212, 0.04);
+  --green: #3a9e7a;
+  --green-glow: rgba(58, 158, 122, 0.5);
+  --red: #c0414e;
+  --shadow: 0 4px 32px rgba(0, 0, 0, 0.7);
+  --tog-track: #0d1d30;
+  --tog-border: #1a3050;
+  --grain: 0.45;
+  --modal-bg: rgba(3, 9, 20, 0.85);
+}
+
+/* LIGHT MODE */
+[data-theme="light"] {
+  --bg: #edf4fb;
+  --surface: #f7fafd;
+  --surface2: #e0eaf5;
+  --surface3: #eaf2fa;
+  --border: #c0d4e8;
+  --border2: #a8c0d8;
+  --text: #0a1e34;
+  --text2: #1e4060;
+  --muted: #4a6a88;
+  --muted2: #8aaac8;
+  --gold: #1a7090;
+  --gold-dim: #1e88aa;
+  --gold-glow: rgba(26, 112, 144, 0.08);
+  --gold-subtle: rgba(26, 112, 144, 0.04);
+  --green: #1a8060;
+  --green-glow: rgba(26, 128, 96, 0.45);
+  --red: #a02030;
+  --shadow: 0 4px 24px rgba(10, 30, 60, 0.12);
+  --tog-track: #cce0f0;
+  --tog-border: #a8c8e0;
+  --grain: 0.15;
+  --modal-bg: rgba(10, 30, 60, 0.55);
+}
+
+/* BASE */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { font-size: 16px; }
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'DM Sans', sans-serif;
+  font-weight: 300;
+  min-height: 100vh;
+  line-height: 1.65;
+  -webkit-font-smoothing: antialiased;
+  transition: background 0.38s, color 0.38s;
+}
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.88' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
+  pointer-events: none;
+  z-index: 9999;
+  opacity: var(--grain);
+  transition: opacity 0.38s;
+}
+
+/* NAV */
+.topnav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 28px;
+  max-width: 960px;
+  margin: 0 auto;
+}
+.brand { display: flex; align-items: center; gap: 12px; text-decoration: none; }
+.brand-mark { width: 38px; height: 38px; flex-shrink: 0; }
+.brand-copy { display: flex; flex-direction: column; gap: 2px; }
+.brand-name {
+  font-family: 'Cormorant Garamond', Georgia, serif;
+  font-size: 1.5rem;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  color: var(--text);
+  line-height: 1;
+  transition: color 0.38s;
+}
+.brand-name em { color: var(--gold); font-style: italic; transition: color 0.38s; }
+.brand-sub {
+  font-family: 'DM Mono', monospace;
+  font-size: 0.58rem;
+  font-weight: 300;
+  color: var(--muted);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  transition: color 0.38s;
+}
+.nav-right { display: flex; align-items: center; gap: 14px; }
+.nav-divider { width: 1px; height: 20px; background: var(--border); flex-shrink: 0; }
+
+/* ONLINE BADGE */
+.badge {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 6px 12px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  transition: background 0.38s, border-color 0.38s;
+}
+.badge-dot {
+  width: 6px;
+  height: 6px;
+  background: var(--green);
+  border-radius: 50%;
+  box-shadow: 0 0 5px var(--green-glow);
+  flex-shrink: 0;
+  animation: pulse 2.8s ease-in-out infinite;
+}
+@keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.45; } }
+.badge-text {
+  font-family: 'DM Mono', monospace;
+  font-size: 0.58rem;
+  color: var(--muted);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  transition: color 0.38s;
+}
+.badge-text b { color: var(--text2); font-weight: 400; }
+
+/* THEME TOGGLE */
+.tog-wrap { display: flex; align-items: center; gap: 8px; cursor: pointer; user-select: none; }
+.tog-icon { font-size: 0.75rem; color: var(--muted2); transition: color 0.3s; }
+[data-theme="dark"]  .tog-icon.moon { color: var(--gold); }
+[data-theme="light"] .tog-icon.sun  { color: var(--gold); }
+.tog-track {
+  position: relative;
+  width: 42px;
+  height: 23px;
+  background: var(--tog-track);
+  border: 1px solid var(--tog-border);
+  border-radius: 12px;
+  flex-shrink: 0;
+  transition: background 0.3s, border-color 0.3s;
+}
+.tog-thumb {
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 15px;
+  height: 15px;
+  background: var(--gold);
+  border-radius: 50%;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.3);
+  transition: transform 0.32s cubic-bezier(0.4, 0, 0.2, 1), background 0.3s;
+}
+[data-theme="light"] .tog-thumb { transform: translateX(19px); }
+#theme-cb { position: absolute; opacity: 0; width: 0; height: 0; }
+
+/* PLAN BANNER */
+.plan-banner {
+  background: var(--surface);
+  border-top: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+  transition: background 0.38s, border-color 0.38s;
+}
+.plan-banner-inner {
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 10px 28px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+.demo-pill {
+  font-family: 'DM Mono', monospace;
+  font-size: 0.52rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--muted2);
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  padding: 2px 7px;
+  flex-shrink: 0;
+  transition: all 0.38s;
+}
+.plan-seg {
+  display: flex;
+  background: var(--surface2);
+  border: 1px solid var(--border2);
+  border-radius: 22px;
+  padding: 2px;
+  flex-shrink: 0;
+  transition: background 0.38s, border-color 0.38s;
+}
+.plan-seg-btn {
+  padding: 5px 18px;
+  border-radius: 20px;
+  border: none;
+  background: transparent;
+  font-family: 'DM Mono', monospace;
+  font-size: 0.64rem;
+  font-weight: 400;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+  cursor: pointer;
+  transition: background 0.22s, color 0.22s;
+}
+.plan-seg-btn.active { background: var(--gold); color: var(--bg); font-weight: 500; }
+.banner-sep { width: 1px; height: 16px; background: var(--border2); flex-shrink: 0; }
+.plan-price-txt {
+  font-family: 'DM Mono', monospace;
+  font-size: 0.62rem;
+  color: var(--muted);
+  letter-spacing: 0.04em;
+  transition: color 0.38s;
+}
+.plan-price-txt strong { color: var(--text2); font-weight: 400; }
+.plan-banner-space { flex: 1; }
+.btn-see-plans {
+  padding: 7px 16px;
+  background: transparent;
+  border: 1px solid var(--gold-dim);
+  border-radius: 5px;
+  color: var(--gold);
+  font-family: 'DM Sans', sans-serif;
+  font-size: 0.75rem;
+  font-weight: 400;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.22s, border-color 0.22s, box-shadow 0.22s;
+}
+.btn-see-plans:hover { background: var(--gold-glow); border-color: var(--gold); }
+
+/* PRO ACTIVE STATE */
+.pro-badge {
+  display: none;
+  align-items: center;
+  gap: 8px;
+}
+.pro-badge.show { display: flex; }
+.pro-badge-text {
+  font-family: 'DM Mono', monospace;
+  font-size: 0.62rem;
+  color: var(--gold);
+  letter-spacing: 0.06em;
+}
+.btn-manage {
+  padding: 4px 10px;
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  color: var(--muted);
+  font-family: 'DM Mono', monospace;
+  font-size: 0.58rem;
+  cursor: pointer;
+  letter-spacing: 0.06em;
+  transition: border-color 0.2s, color 0.2s;
+}
+.btn-manage:hover { border-color: var(--border2); color: var(--text2); }
+
+/* PAGE */
+.page {
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 36px 28px 88px;
+  border-top: 1px solid var(--border);
+  transition: border-color 0.38s;
+}
+
+/* HERO */
+.hero { margin-bottom: 26px; }
+.hero-title {
+  font-family: 'Cormorant Garamond', Georgia, serif;
+  font-size: 2.05rem;
+  font-weight: 400;
+  color: var(--text);
+  margin-bottom: 7px;
+  transition: color 0.38s;
+}
+.hero-title span { color: var(--gold); font-style: italic; }
+.hero-sub {
+  font-size: 0.81rem;
+  color: var(--muted);
+  font-weight: 300;
+  max-width: 580px;
+  line-height: 1.65;
+  transition: color 0.38s;
+}
+
+/* DROP ZONE */
+.drop-zone {
+  position: relative;
+  border: 1px dashed var(--border2);
+  border-radius: 7px;
+  padding: 50px 32px;
+  text-align: center;
+  cursor: pointer;
+  background: var(--surface);
+  overflow: hidden;
+  transition: border-color 0.22s, background 0.22s;
+}
+.drop-zone::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse at 50% 0%, var(--gold-glow), transparent 68%);
+  opacity: 0;
+  transition: opacity 0.22s;
+  pointer-events: none;
+}
+.drop-zone:hover, .drop-zone.over { border-color: var(--gold-dim); background: var(--surface2); }
+.drop-zone:hover::before, .drop-zone.over::before { opacity: 1; }
+.drop-zone input[type="file"] {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  cursor: pointer;
+  width: 100%;
+  height: 100%;
+}
+.dz-icon {
+  width: 50px;
+  height: 50px;
+  margin: 0 auto 18px;
+  background: var(--surface2);
+  border: 1px solid var(--border2);
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.38s, border-color 0.38s, transform 0.22s;
+}
+.drop-zone:hover .dz-icon { transform: translateY(-3px); }
+.dz-title {
+  font-family: 'Cormorant Garamond', Georgia, serif;
+  font-size: 1.28rem;
+  font-weight: 400;
+  color: var(--text);
+  margin-bottom: 6px;
+  transition: color 0.38s;
+}
+.dz-sub {
+  font-size: 0.79rem;
+  color: var(--muted);
+  font-weight: 300;
+  margin-bottom: 18px;
+  transition: color 0.38s;
+}
+.dz-pills { display: flex; align-items: center; justify-content: center; gap: 10px; flex-wrap: wrap; }
+.dz-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 11px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  font-family: 'DM Mono', monospace;
+  font-size: 0.58rem;
+  color: var(--muted);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  transition: all 0.38s;
+}
+.dz-pill.pro { border-color: var(--gold-dim); color: var(--gold-dim); }
+
+/* FILE QUEUE */
+.file-queue {
+  display: none;
+  margin-top: 14px;
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  overflow: hidden;
+  transition: border-color 0.38s;
+}
+.file-queue.open { display: block; }
+.queue-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 16px;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  transition: background 0.38s, border-color 0.38s;
+}
+.queue-title {
+  font-family: 'DM Mono', monospace;
+  font-size: 0.62rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.queue-count {
+  font-family: 'DM Mono', monospace;
+  font-size: 0.62rem;
+  color: var(--gold);
+}
+.queue-body {
+  padding: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  background: var(--surface3);
+  transition: background 0.38s;
+}
+.queue-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  transition: background 0.38s, border-color 0.38s;
+}
+.qi-info { flex: 1; min-width: 0; }
+.qi-name {
+  font-family: 'DM Mono', monospace;
+  font-size: 0.68rem;
+  color: var(--text2);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  transition: color 0.38s;
+}
+.qi-size {
+  font-family: 'DM Mono', monospace;
+  font-size: 0.58rem;
+  color: var(--muted2);
+  transition: color 0.38s;
+}
+.qi-status {
+  font-family: 'DM Mono', monospace;
+  font-size: 0.58rem;
+  letter-spacing: 0.06em;
+  padding: 2px 7px;
+  border-radius: 3px;
+  border: 1px solid var(--border);
+  color: var(--muted);
+  transition: all 0.2s;
+}
+.qi-status.processing { color: var(--gold); border-color: var(--gold-dim); }
+.qi-status.done { color: var(--green); border-color: var(--green); }
+.qi-status.err { color: var(--red); border-color: rgba(160, 52, 40, 0.3); }
+.qi-remove {
+  background: none;
+  border: none;
+  color: var(--muted2);
+  cursor: pointer;
+  font-size: 0.9rem;
+  padding: 2px 4px;
+  border-radius: 3px;
+  transition: color 0.2s, background 0.2s;
+  flex-shrink: 0;
+}
+.qi-remove:hover { color: var(--red); background: rgba(160, 52, 40, 0.1); }
+.queue-foot {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  background: var(--surface);
+  border-top: 1px solid var(--border);
+  transition: background 0.38s, border-color 0.38s;
+}
+.btn-process {
+  padding: 9px 20px;
+  background: var(--gold);
+  border: none;
+  border-radius: 5px;
+  color: var(--bg);
+  font-family: 'DM Sans', sans-serif;
+  font-size: 0.78rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: opacity 0.2s, transform 0.15s;
+}
+.btn-process:hover:not(:disabled) { opacity: 0.9; transform: translateY(-1px); }
+.btn-process:disabled { opacity: 0.4; cursor: not-allowed; }
+.btn-clear {
+  padding: 9px 14px;
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  color: var(--muted);
+  font-family: 'DM Sans', sans-serif;
+  font-size: 0.75rem;
+  cursor: pointer;
+  transition: border-color 0.2s, color 0.2s;
+}
+.btn-clear:hover { border-color: var(--border2); color: var(--text2); }
+
+/* NOTICES */
+.notices { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-top: 14px; }
+.notice {
+  padding: 13px 15px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  transition: background 0.38s, border-color 0.38s;
+}
+.notice.highlight { border-color: rgba(201, 168, 76, 0.2); }
+.notice-lbl {
+  font-family: 'DM Mono', monospace;
+  font-size: 0.58rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--gold-dim);
+  margin-bottom: 5px;
+  transition: color 0.38s;
+}
+.notice-txt {
+  font-size: 0.76rem;
+  color: var(--muted);
+  line-height: 1.55;
+  font-weight: 300;
+  transition: color 0.38s;
+}
+
+/* RATE LIMIT BAR */
+.rate-notice {
+  display: none;
+  margin-top: 13px;
+  padding: 11px 16px;
+  background: rgba(74, 124, 89, 0.06);
+  border: 1px solid rgba(74, 124, 89, 0.2);
+  border-radius: 6px;
+  font-family: 'DM Mono', monospace;
+  font-size: 0.72rem;
+  color: var(--green);
+  align-items: center;
+  gap: 10px;
+}
+.rate-notice.show { display: flex; }
+
+/* PROCESSING */
+#proc-panel {
+  display: none;
+  margin-top: 22px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  overflow: hidden;
+  box-shadow: var(--shadow);
+  transition: border-color 0.38s, box-shadow 0.38s;
+}
+.proc-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 11px 17px;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  transition: background 0.38s, border-color 0.38s;
+}
+.proc-label {
+  font-family: 'DM Mono', monospace;
+  font-size: 0.62rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.proc-mode-tag {
+  font-family: 'DM Mono', monospace;
+  font-size: 0.58rem;
+  color: var(--muted2);
+  letter-spacing: 0.08em;
+  margin-left: 8px;
+}
+.proc-fname {
+  font-family: 'DM Mono', monospace;
+  font-size: 0.67rem;
+  color: var(--gold);
+  max-width: 240px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.prog-track { height: 2px; background: var(--border); transition: background 0.38s; }
+.prog-fill {
+  height: 100%;
+  width: 0%;
+  background: linear-gradient(90deg, var(--gold-dim), var(--gold));
+  box-shadow: 0 0 8px rgba(201, 168, 76, 0.3);
+  transition: width 0.36s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.log-box {
+  padding: 13px 17px;
+  background: var(--surface3);
+  min-height: 70px;
+  max-height: 200px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  transition: background 0.38s;
+}
+.log-box::-webkit-scrollbar { width: 3px; }
+.log-box::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px; }
+.log-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 9px;
+  font-family: 'DM Mono', monospace;
+  font-size: 0.68rem;
+  line-height: 1.5;
+  opacity: 0;
+  animation: fadein 0.28s ease forwards;
+}
+@keyframes fadein { from { opacity: 0; transform: translateY(3px); } to { opacity: 1; transform: none; } }
+.log-ts { color: var(--muted2); font-size: 0.6rem; flex-shrink: 0; padding-top: 1px; }
+.log-ic { flex-shrink: 0; }
+.log-msg { color: var(--muted); }
+.log-row.ok  .log-msg { color: var(--text2); }
+.log-row.warn .log-msg { color: #b8902a; }
+.log-row.err  .log-msg { color: #b03428; }
+
+/* CALLOUTS */
+.callout {
+  display: none;
+  margin-top: 13px;
+  padding: 12px 16px;
+  border-radius: 6px;
+  font-size: 0.77rem;
+  line-height: 1.6;
+}
+.callout.type-err  { background: rgba(160, 52, 40, 0.06); border: 1px solid rgba(160, 52, 40, 0.18); color: var(--red); }
+.callout.type-warn { background: rgba(184, 144, 42, 0.06); border: 1px solid rgba(184, 144, 42, 0.2); color: #b8902a; }
+
+/* PREVIEW */
+#preview { display: none; margin-top: 24px; }
+.sec-label {
+  font-family: 'DM Mono', monospace;
+  font-size: 0.61rem;
+  letter-spacing: 0.13em;
+  text-transform: uppercase;
+  color: var(--muted2);
+  margin-bottom: 11px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.sec-label::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+.sheet-tabs { display: flex; gap: 3px; overflow-x: auto; }
+.sheet-tabs::-webkit-scrollbar { height: 2px; }
+.sheet-tabs::-webkit-scrollbar-thumb { background: var(--border2); }
+.sheet-tab {
+  padding: 6px 14px;
+  border-radius: 5px 5px 0 0;
+  border: 1px solid var(--border);
+  border-bottom: none;
+  background: var(--surface);
+  font-family: 'DM Mono', monospace;
+  font-size: 0.62rem;
+  color: var(--muted);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.2s, color 0.2s, border-color 0.2s;
+}
+.sheet-tab.active { background: var(--surface2); color: var(--gold); border-color: var(--border2); }
+.table-wrap {
+  border: 1px solid var(--border2);
+  border-radius: 0 5px 5px 5px;
+  overflow: auto;
+  max-height: 340px;
+  background: var(--surface2);
+  transition: border-color 0.38s, background 0.38s;
+}
+.table-wrap::-webkit-scrollbar { width: 4px; height: 4px; }
+.table-wrap::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px; }
+table { width: 100%; border-collapse: collapse; font-family: 'DM Mono', monospace; font-size: 0.68rem; }
+thead tr { background: var(--surface); border-bottom: 1px solid var(--border2); transition: background 0.38s; }
+th {
+  padding: 9px 13px;
+  text-align: left;
+  font-size: 0.6rem;
+  font-weight: 400;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: var(--muted);
+  border-right: 1px solid var(--border);
+  white-space: nowrap;
+}
+th:last-child { border-right: none; }
+td {
+  padding: 7px 13px;
+  color: var(--text);
+  font-weight: 300;
+  border-right: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+  white-space: nowrap;
+  max-width: 240px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  vertical-align: top;
+  transition: color 0.38s, border-color 0.38s;
+}
+td:last-child { border-right: none; }
+tr:last-child td { border-bottom: none; }
+tbody tr:nth-child(even) { background: rgba(128, 128, 80, 0.022); }
+tbody tr:hover { background: var(--gold-subtle); }
+.table-meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 13px;
+  border-top: 1px solid var(--border);
+  background: var(--surface);
+  font-family: 'DM Mono', monospace;
+  font-size: 0.61rem;
+  color: var(--muted2);
+  border-radius: 0 0 5px 5px;
+  transition: background 0.38s, border-color 0.38s;
+}
+
+/* DOWNLOAD BAR */
+#dl-bar {
+  display: none;
+  margin-top: 20px;
+  align-items: center;
+  justify-content: space-between;
+  padding: 17px 21px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  box-shadow: var(--shadow);
+  transition: background 0.38s, border-color 0.38s, box-shadow 0.38s;
+}
+.dl-info { display: flex; flex-direction: column; gap: 3px; }
+.dl-fname { font-family: 'DM Mono', monospace; font-size: 0.78rem; color: var(--text); transition: color 0.38s; }
+.dl-meta  { font-family: 'DM Mono', monospace; font-size: 0.61rem; color: var(--muted); letter-spacing: 0.06em; transition: color 0.38s; }
+.btn-dl {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  padding: 11px 21px;
+  background: transparent;
+  border: 1px solid var(--gold-dim);
+  border-radius: 5px;
+  color: var(--gold);
+  font-family: 'DM Sans', sans-serif;
+  font-size: 0.79rem;
+  font-weight: 400;
+  letter-spacing: 0.05em;
+  cursor: pointer;
+  transition: background 0.22s, border-color 0.22s, box-shadow 0.22s;
+}
+.btn-dl:hover { background: var(--gold-glow); border-color: var(--gold); box-shadow: 0 0 16px rgba(201, 168, 76, 0.1); }
+.btn-another {
+  display: none;
+  margin-top: 11px;
+  background: none;
+  border: none;
+  font-family: 'DM Mono', monospace;
+  font-size: 0.61rem;
+  color: var(--muted2);
+  cursor: pointer;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  transition: color 0.2s;
+}
+.btn-another:hover { color: var(--muted); }
+
+/* PIPEDA SECTION */
+.pipeda-section {
+  margin-top: 52px;
+  padding: 28px 30px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  transition: background 0.38s, border-color 0.38s;
+}
+.pipeda-head { display: flex; align-items: flex-start; gap: 16px; margin-bottom: 18px; }
+.pipeda-icon {
+  width: 40px;
+  height: 40px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--surface2);
+  border: 1px solid var(--border2);
+  border-radius: 8px;
+  font-size: 1.1rem;
+  transition: background 0.38s, border-color 0.38s;
+}
+.pipeda-heading {
+  font-family: 'Cormorant Garamond', Georgia, serif;
+  font-size: 1.15rem;
+  font-weight: 400;
+  color: var(--text);
+  margin-bottom: 3px;
+  transition: color 0.38s;
+}
+.pipeda-sub {
+  font-family: 'DM Mono', monospace;
+  font-size: 0.6rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--muted);
+  transition: color 0.38s;
+}
+.pipeda-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin-bottom: 18px; }
+.pipeda-item {
+  padding: 12px 14px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  transition: background 0.38s, border-color 0.38s;
+}
+.pipeda-item-title {
+  font-family: 'DM Mono', monospace;
+  font-size: 0.6rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--gold-dim);
+  margin-bottom: 4px;
+  transition: color 0.38s;
+}
+.pipeda-item-text { font-size: 0.75rem; color: var(--muted); line-height: 1.5; transition: color 0.38s; }
+.pipeda-foot {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+  padding-top: 16px;
+  border-top: 1px solid var(--border);
+  transition: border-color 0.38s;
+}
+.pipeda-note { font-size: 0.75rem; color: var(--muted); line-height: 1.55; flex: 1; transition: color 0.38s; }
+.btn-policy {
+  padding: 7px 16px;
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  color: var(--muted);
+  font-family: 'DM Mono', monospace;
+  font-size: 0.62rem;
+  cursor: pointer;
+  white-space: nowrap;
+  letter-spacing: 0.06em;
+  transition: border-color 0.2s, color 0.2s;
+}
+.btn-policy:hover { border-color: var(--border2); color: var(--text2); }
+
+/* FOOTER */
+footer {
+  margin-top: 40px;
+  padding-top: 22px;
+  border-top: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 10px;
+  transition: border-color 0.38s;
+}
+.foot-brand {
+  font-family: 'Cormorant Garamond', Georgia, serif;
+  font-size: 0.95rem;
+  font-weight: 500;
+  color: var(--muted);
+  letter-spacing: 0.04em;
+  transition: color 0.38s;
+}
+.foot-brand em { color: var(--gold); font-style: italic; }
+.foot-links { display: flex; align-items: center; gap: 16px; }
+.foot-link {
+  font-family: 'DM Mono', monospace;
+  font-size: 0.58rem;
+  color: var(--muted2);
+  text-decoration: none;
+  letter-spacing: 0.06em;
+  cursor: pointer;
+  transition: color 0.2s;
+}
+.foot-link:hover { color: var(--muted); }
+.foot-ver { font-family: 'DM Mono', monospace; font-size: 0.58rem; color: var(--muted2); letter-spacing: 0.08em; }
+
+/* MODAL OVERLAY */
+.modal-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: var(--modal-bg);
+  z-index: 10000;
+  align-items: center;
+  justify-content: center;
+  backdrop-filter: blur(5px);
+  padding: 20px;
+  transition: background 0.38s;
+}
+.modal-overlay.open { display: flex; }
+
+/* PAYWALL MODAL */
+.paywall-card {
+  background: var(--surface);
+  border: 1px solid var(--border2);
+  border-radius: 12px;
+  padding: 32px 28px;
+  width: 100%;
+  max-width: 520px;
+  box-shadow: var(--shadow);
+  position: relative;
+  max-height: 90vh;
+  overflow-y: auto;
+  transition: background 0.38s, border-color 0.38s;
+}
+.paywall-card::-webkit-scrollbar { width: 3px; }
+.paywall-card::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px; }
+.modal-x {
+  position: absolute;
+  top: 14px;
+  right: 16px;
+  background: none;
+  border: none;
+  color: var(--muted2);
+  cursor: pointer;
+  font-size: 1.1rem;
+  line-height: 1;
+  padding: 4px 6px;
+  border-radius: 4px;
+  transition: color 0.2s, background 0.2s;
+}
+.modal-x:hover { color: var(--text); background: var(--surface2); }
+.pw-icon {
+  width: 44px;
+  height: 44px;
+  background: var(--surface2);
+  border: 1px solid var(--border2);
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 16px;
+  font-size: 1.1rem;
+  transition: background 0.38s, border-color 0.38s;
+}
+.pw-title {
+  font-family: 'Cormorant Garamond', Georgia, serif;
+  font-size: 1.5rem;
+  font-weight: 400;
+  color: var(--text);
+  margin-bottom: 6px;
+  transition: color 0.38s;
+}
+.pw-reason {
+  font-size: 0.78rem;
+  color: var(--muted);
+  margin-bottom: 20px;
+  line-height: 1.55;
+  min-height: 18px;
+  transition: color 0.38s;
+}
+.billing-seg {
+  display: inline-flex;
+  background: var(--surface2);
+  border: 1px solid var(--border2);
+  border-radius: 22px;
+  padding: 2px;
+  margin-bottom: 20px;
+  transition: background 0.38s, border-color 0.38s;
+}
+.bill-btn {
+  padding: 6px 18px;
+  border-radius: 20px;
+  border: none;
+  background: transparent;
+  font-family: 'DM Mono', monospace;
+  font-size: 0.64rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+  cursor: pointer;
+  transition: background 0.22s, color 0.22s;
+}
+.bill-btn.active { background: var(--gold); color: var(--bg); font-weight: 500; }
+.save-tag {
+  display: inline-block;
+  background: var(--green);
+  color: #fff;
+  font-size: 0.5rem;
+  padding: 1px 5px;
+  border-radius: 3px;
+  margin-left: 5px;
+  vertical-align: middle;
+  font-weight: 500;
+}
+.bill-btn.active .save-tag { background: rgba(0, 0, 0, 0.2); color: rgba(0, 0, 0, 0.7); }
+.price-block {
+  text-align: center;
+  padding: 16px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  margin-bottom: 20px;
+  transition: background 0.38s, border-color 0.38s;
+}
+.price-main {
+  font-family: 'Cormorant Garamond', Georgia, serif;
+  font-size: 2rem;
+  font-weight: 400;
+  color: var(--text);
+  transition: color 0.38s;
+}
+.price-sub {
+  font-family: 'DM Mono', monospace;
+  font-size: 0.65rem;
+  color: var(--muted);
+  letter-spacing: 0.06em;
+  margin-top: 4px;
+  transition: color 0.38s;
+}
+.feat-table { width: 100%; border-collapse: collapse; margin-bottom: 20px; font-size: 0.76rem; }
+.feat-table thead th {
+  padding: 8px 10px;
+  font-family: 'DM Mono', monospace;
+  font-size: 0.6rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--muted);
+  border-bottom: 1px solid var(--border);
+  text-align: left;
+}
+.feat-table thead th:not(:first-child) { text-align: center; }
+.feat-table thead th.pro-col { color: var(--gold); }
+.feat-table tbody td {
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--border);
+  color: var(--text2);
+  transition: color 0.38s, border-color 0.38s;
+}
+.feat-table tbody tr:last-child td { border-bottom: none; }
+.feat-table tbody td:not(:first-child) { text-align: center; }
+.feat-val-pro { color: var(--gold); font-weight: 400; }
+.feat-check { color: var(--green); font-weight: 600; }
+.feat-dash { color: var(--muted2); }
+.btn-upgrade {
+  width: 100%;
+  padding: 13px;
+  background: var(--gold);
+  border: none;
+  border-radius: 6px;
+  color: var(--bg);
+  font-family: 'DM Sans', sans-serif;
+  font-size: 0.88rem;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  cursor: pointer;
+  transition: opacity 0.2s, transform 0.15s;
+  margin-bottom: 10px;
+}
+.btn-upgrade:hover { opacity: 0.9; transform: translateY(-1px); }
+.btn-stay-free {
+  width: 100%;
+  padding: 9px;
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--muted);
+  font-family: 'DM Sans', sans-serif;
+  font-size: 0.78rem;
+  cursor: pointer;
+  transition: border-color 0.2s, color 0.2s;
+}
+.btn-stay-free:hover { border-color: var(--border2); color: var(--text2); }
+.stripe-note {
+  text-align: center;
+  font-family: 'DM Mono', monospace;
+  font-size: 0.58rem;
+  color: var(--muted2);
+  margin-top: 10px;
+  letter-spacing: 0.04em;
+}
+
+/* PASSWORD MODAL */
+.pwd-card {
+  background: var(--surface);
+  border: 1px solid var(--border2);
+  border-radius: 10px;
+  padding: 30px 26px;
+  width: 100%;
+  max-width: 380px;
+  box-shadow: var(--shadow);
+  position: relative;
+  transition: background 0.38s, border-color 0.38s;
+}
+.pwd-title {
+  font-family: 'Cormorant Garamond', Georgia, serif;
+  font-size: 1.3rem;
+  font-weight: 400;
+  color: var(--text);
+  margin-bottom: 5px;
+}
+.pwd-sub { font-size: 0.77rem; color: var(--muted); margin-bottom: 12px; line-height: 1.55; }
+.pwd-file {
+  font-family: 'DM Mono', monospace;
+  font-size: 0.68rem;
+  color: var(--gold);
+  margin-bottom: 16px;
+  word-break: break-all;
+}
+.pwd-wrap { position: relative; margin-bottom: 8px; }
+.pwd-input {
+  width: 100%;
+  padding: 10px 40px 10px 14px;
+  background: var(--surface2);
+  border: 1px solid var(--border2);
+  border-radius: 5px;
+  color: var(--text);
+  font-family: 'DM Mono', monospace;
+  font-size: 0.8rem;
+  outline: none;
+  transition: border-color 0.2s, background 0.38s, color 0.38s;
+}
+.pwd-input:focus { border-color: var(--gold-dim); }
+.pwd-eye {
+  position: absolute;
+  right: 11px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--muted);
+  font-size: 0.75rem;
+  padding: 2px 4px;
+  transition: color 0.2s;
+}
+.pwd-eye:hover { color: var(--text2); }
+.pwd-error {
+  font-family: 'DM Mono', monospace;
+  font-size: 0.63rem;
+  color: var(--red);
+  margin-bottom: 12px;
+  display: none;
+}
+.pwd-actions { display: flex; gap: 10px; }
+.btn-pwd-ok {
+  flex: 1;
+  padding: 10px;
+  background: transparent;
+  border: 1px solid var(--gold-dim);
+  border-radius: 5px;
+  color: var(--gold);
+  font-family: 'DM Sans', sans-serif;
+  font-size: 0.78rem;
+  cursor: pointer;
+  transition: background 0.2s, border-color 0.2s;
+}
+.btn-pwd-ok:hover { background: var(--gold-glow); border-color: var(--gold); }
+.btn-pwd-cancel {
+  padding: 10px 14px;
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  color: var(--muted);
+  font-family: 'DM Sans', sans-serif;
+  font-size: 0.78rem;
+  cursor: pointer;
+  transition: border-color 0.2s;
+}
+.btn-pwd-cancel:hover { border-color: var(--border2); }
+
+/* PRIVACY POLICY MODAL */
+.priv-card {
+  background: var(--surface);
+  border: 1px solid var(--border2);
+  border-radius: 10px;
+  padding: 30px 26px;
+  width: 100%;
+  max-width: 600px;
+  box-shadow: var(--shadow);
+  max-height: 85vh;
+  overflow-y: auto;
+  position: relative;
+  transition: background 0.38s, border-color 0.38s;
+}
+.priv-card::-webkit-scrollbar { width: 3px; }
+.priv-card::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px; }
+.priv-title { font-family: 'Cormorant Garamond', Georgia, serif; font-size: 1.35rem; font-weight: 400; color: var(--text); margin-bottom: 4px; }
+.priv-date { font-family: 'DM Mono', monospace; font-size: 0.58rem; color: var(--muted2); letter-spacing: 0.08em; margin-bottom: 22px; }
+.priv-sec { margin-bottom: 20px; }
+.priv-sec h3 { font-family: 'DM Sans', sans-serif; font-size: 0.82rem; font-weight: 500; color: var(--text2); margin-bottom: 8px; }
+.priv-sec p { font-size: 0.77rem; color: var(--muted); line-height: 1.65; }
+.priv-sec p + p { margin-top: 6px; }
+.priv-sec ul { padding-left: 16px; display: flex; flex-direction: column; gap: 5px; margin-top: 6px; }
+.priv-sec li { font-size: 0.77rem; color: var(--muted); line-height: 1.55; list-style: disc; }
+.priv-hr { height: 1px; background: var(--border); margin: 16px 0; }
+.priv-link { color: var(--gold); text-decoration: none; }
+.priv-link:hover { text-decoration: underline; }
+
+/* CONSENT BANNER */
+#consent-bar {
+  display: none;
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 9998;
+  background: var(--surface);
+  border-top: 1px solid var(--border);
+  padding: 14px 28px;
+  box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.25);
+  transition: background 0.38s, border-color 0.38s;
+}
+#consent-bar.show { display: block; }
+.consent-inner {
+  max-width: 960px;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+.consent-txt { flex: 1; font-size: 0.76rem; color: var(--muted); line-height: 1.55; min-width: 200px; }
+.consent-link { color: var(--gold); text-decoration: none; cursor: pointer; }
+.consent-link:hover { text-decoration: underline; }
+.consent-btns { display: flex; gap: 10px; flex-shrink: 0; }
+.btn-accept {
+  padding: 8px 18px;
+  background: var(--gold);
+  border: none;
+  border-radius: 5px;
+  color: var(--bg);
+  font-family: 'DM Sans', sans-serif;
+  font-size: 0.75rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: opacity 0.2s;
+}
+.btn-accept:hover { opacity: 0.9; }
+.btn-decline {
+  padding: 8px 14px;
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  color: var(--muted);
+  font-family: 'DM Sans', sans-serif;
+  font-size: 0.75rem;
+  cursor: pointer;
+  transition: border-color 0.2s, color 0.2s;
+}
+.btn-decline:hover { border-color: var(--border2); color: var(--text2); }
+
+/* RESPONSIVE */
+@media (max-width: 700px) {
+  .notices { grid-template-columns: repeat(2, 1fr); }
+  .topnav { padding: 14px 18px; }
+  .badge { display: none; }
+  #dl-bar { flex-direction: column; align-items: flex-start; gap: 13px; }
+  footer { flex-direction: column; align-items: flex-start; gap: 10px; }
+  .pipeda-grid { grid-template-columns: 1fr; }
+  .pipeda-foot { flex-direction: column; }
+  .page { padding: 28px 18px 80px; }
+}
+@media (max-width: 440px) {
+  .notices { grid-template-columns: 1fr; }
+}
+</style>
+</head>
+
+<body>
+
+<!-- NAV -->
+<nav>
+  <div class="topnav">
+    <a class="brand" href="#">
+      <svg class="brand-mark" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <!-- Background tile -->
+        <rect width="40" height="40" rx="9" fill="var(--surface2)"/>
+        <rect x=".5" y=".5" width="39" height="39" rx="8.5" stroke="var(--border2)" stroke-width="1"/>
+        <!-- Coffer body -->
+        <rect x="7" y="17" width="26" height="16" rx="2.5" fill="var(--surface3)" stroke="var(--gold)" stroke-width="1.3"/>
+        <!-- Coffer lid (arched top) -->
+        <path d="M7 20 Q7 11 20 11 Q33 11 33 20" fill="var(--surface2)" stroke="var(--gold)" stroke-width="1.3"/>
+        <!-- Grid lines on lid face — 2 horizontal -->
+        <line x1="10" y1="14.5" x2="30" y2="14.5" stroke="var(--gold)" stroke-width="0.85" opacity="0.55" stroke-linecap="round"/>
+        <line x1="9"  y1="17.5" x2="31" y2="17.5" stroke="var(--gold)" stroke-width="0.85" opacity="0.35" stroke-linecap="round"/>
+        <!-- Grid lines on lid face — 3 vertical -->
+        <line x1="15" y1="11.5" x2="13" y2="19.5" stroke="var(--gold)" stroke-width="0.75" opacity="0.45" stroke-linecap="round"/>
+        <line x1="20" y1="11"   x2="20" y2="20"   stroke="var(--gold)" stroke-width="0.75" opacity="0.6"  stroke-linecap="round"/>
+        <line x1="25" y1="11.5" x2="27" y2="19.5" stroke="var(--gold)" stroke-width="0.75" opacity="0.45" stroke-linecap="round"/>
+        <!-- Hasp / lock plate -->
+        <rect x="17" y="21.5" width="6" height="4.5" rx="1" fill="var(--surface2)" stroke="var(--gold)" stroke-width="1.1"/>
+        <!-- Keyhole -->
+        <circle cx="20" cy="23.2" r="1" fill="var(--gold)" opacity="0.9"/>
+        <line x1="20" y1="24.2" x2="20" y2="25.5" stroke="var(--gold)" stroke-width="1" stroke-linecap="round" opacity="0.8"/>
+        <!-- Corner studs on body -->
+        <circle cx="10"  cy="20.5" r="0.9" fill="var(--gold)" opacity="0.6"/>
+        <circle cx="30"  cy="20.5" r="0.9" fill="var(--gold)" opacity="0.6"/>
+        <circle cx="10"  cy="31.5" r="0.9" fill="var(--gold)" opacity="0.6"/>
+        <circle cx="30"  cy="31.5" r="0.9" fill="var(--gold)" opacity="0.6"/>
+        <!-- Band stripe across body -->
+        <line x1="7" y1="26" x2="33" y2="26" stroke="var(--gold)" stroke-width="0.8" opacity="0.3"/>
+      </svg>
+      <div class="brand-copy">
+        <div class="brand-name">Grid<em>Coffer</em></div>
+        <div class="brand-sub">Confidential Document Intelligence</div>
+      </div>
+    </a>
+    <div class="nav-right">
+      <div class="badge">
+        <div class="badge-dot"></div>
+        <div class="badge-text"><b>On-device</b>&nbsp;&middot; zero network</div>
+      </div>
+      <div class="nav-divider"></div>
+      <label class="tog-wrap" title="Toggle light / dark">
+        <input type="checkbox" id="theme-cb">
+        <span class="tog-icon sun">&#9728;</span>
+        <div class="tog-track"><div class="tog-thumb"></div></div>
+        <span class="tog-icon moon">&#9790;</span>
+      </label>
+    </div>
+  </div>
+</nav>
+
+<!-- PLAN BANNER -->
+<div class="plan-banner">
+  <div class="plan-banner-inner">
+    <span class="demo-pill">Demo</span>
+    <div class="plan-seg">
+      <button class="plan-seg-btn active" id="btn-free">Free</button>
+      <button class="plan-seg-btn" id="btn-pro">Pro</button>
+    </div>
+    <div class="banner-sep"></div>
+    <div class="plan-price-txt" id="banner-free-txt">
+      Pro from <strong>$19.99 CAD/mo</strong>&nbsp;&middot;&nbsp;<strong>$199/yr</strong>&nbsp;(save 17%)
+    </div>
+    <div class="pro-badge" id="banner-pro-badge">
+      <span style="font-size:0.9rem">&#x2726;</span>
+      <span class="pro-badge-text">Pro Active &mdash; Demo Mode</span>
+      <button class="btn-manage" id="btn-manage">Manage Plan</button>
+    </div>
+    <div class="plan-banner-space"></div>
+    <button class="btn-see-plans" id="btn-see-plans">See Pro Features &rarr;</button>
+  </div>
+</div>
+
+<!-- MAIN PAGE -->
+<div class="page">
+
+  <!-- HERO -->
+  <div class="hero">
+    <div class="hero-title">PDF &rarr; <span>Excel</span></div>
+    <p class="hero-sub" id="hero-sub">
+      Drop a PDF and receive a precisely structured Excel workbook &mdash; each column in its own cell, each page as its own sheet, processed entirely on your device.
+    </p>
+  </div>
+
+  <!-- DROP ZONE -->
+  <div class="drop-zone" id="dropzone">
+    <input type="file" id="file-input" accept=".pdf" multiple>
+    <div class="dz-icon">
+      <svg width="22" height="22" viewBox="0 0 22 22" fill="none">
+        <path d="M11 3v13M5 10l6-7 6 7M3 19h16" stroke="var(--gold)" stroke-width="1.55" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+    </div>
+    <div class="dz-title">Drop your PDF here</div>
+    <div class="dz-sub">or click to browse &mdash; text, scanned, or password-protected</div>
+    <div class="dz-pills">
+      <span class="dz-pill" id="pill-files">1 file (Free)</span>
+      <span class="dz-pill" id="pill-size">5 MB max (Free)</span>
+      <span class="dz-pill" id="pill-pages">10 pages max (Free)</span>
+      <span class="dz-pill pro" id="pill-ocr">OCR: Pro only</span>
+    </div>
+  </div>
+
+  <!-- FILE QUEUE (PRO BATCH) -->
+  <div class="file-queue" id="file-queue">
+    <div class="queue-head">
+      <span class="queue-title">Batch Queue</span>
+      <span class="queue-count" id="queue-count">0 / 5 files</span>
+    </div>
+    <div class="queue-body" id="queue-body"></div>
+    <div class="queue-foot">
+      <button class="btn-process" id="btn-process" disabled>Process Batch &rarr;</button>
+      <button class="btn-clear" id="btn-clear">Clear all</button>
+    </div>
+  </div>
+
+  <!-- NOTICES -->
+  <div class="notices">
+    <div class="notice">
+      <div class="notice-lbl">Privacy</div>
+      <div class="notice-txt">Your PDF never leaves your device. Processing is fully local &mdash; nothing is transmitted or stored.</div>
+    </div>
+    <div class="notice">
+      <div class="notice-lbl">Column Accuracy</div>
+      <div class="notice-txt">Gap threshold auto-detects per PDF so every column lands in its own Excel cell.</div>
+    </div>
+    <div class="notice">
+      <div class="notice-lbl">Password PDFs</div>
+      <div class="notice-txt">Encrypted files are supported on both plans. An on-device prompt unlocks before extraction.</div>
+    </div>
+    <div class="notice highlight">
+      <div class="notice-lbl">Pro: OCR + Batch</div>
+      <div class="notice-txt">Scanned PDFs and batch processing (5 files, 250 pages) require Pro. Upgrade to unlock.</div>
+    </div>
+  </div>
+
+  <!-- RATE LIMIT NOTICE -->
+  <div class="rate-notice" id="rate-notice">
+    <span id="rate-msg"></span>
+  </div>
+
+  <!-- PROCESSING PANEL -->
+  <div id="proc-panel">
+    <div class="proc-head">
+      <div>
+        <span class="proc-label">Processing</span>
+        <span class="proc-mode-tag" id="proc-mode"></span>
+      </div>
+      <div class="proc-fname" id="proc-fname"></div>
+    </div>
+    <div class="prog-track"><div class="prog-fill" id="prog-fill"></div></div>
+    <div class="log-box" id="log-box"></div>
+  </div>
+
+  <div class="callout type-err"  id="c-err"></div>
+  <div class="callout type-warn" id="c-warn"></div>
+
+  <!-- PREVIEW -->
+  <div id="preview">
+    <div class="sec-label">Data Preview</div>
+    <div class="sheet-tabs" id="sheet-tabs"></div>
+    <div class="table-wrap">
+      <table><thead id="t-head"></thead><tbody id="t-body"></tbody></table>
+    </div>
+    <div class="table-meta" id="t-meta"></div>
+  </div>
+
+  <!-- DOWNLOAD -->
+  <div id="dl-bar">
+    <div class="dl-info">
+      <div class="dl-fname" id="dl-fname"></div>
+      <div class="dl-meta"  id="dl-meta"></div>
+    </div>
+    <button class="btn-dl" id="btn-dl">
+      <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+        <path d="M7 1v8M3 7l4 4 4-4M1 12h12" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+      Download Excel
+    </button>
+  </div>
+  <button class="btn-another" id="btn-another">&larr; Convert another file</button>
+
+  <!-- PIPEDA SECTION -->
+  <section class="pipeda-section">
+    <div class="pipeda-head">
+      <div class="pipeda-icon">&#x1F6E1;</div>
+      <div>
+        <div class="pipeda-heading">Privacy by Design &mdash; PIPEDA Compliant</div>
+        <div class="pipeda-sub">Personal Information Protection and Electronic Documents Act &middot; Canada</div>
+      </div>
+    </div>
+    <div class="pipeda-grid">
+      <div class="pipeda-item">
+        <div class="pipeda-item-title">Clear Purpose</div>
+        <div class="pipeda-item-text">GridCoffer processes PDFs solely to convert them to Excel. No secondary use, no profiling, no analytics on document content.</div>
+      </div>
+      <div class="pipeda-item">
+        <div class="pipeda-item-title">Meaningful Consent</div>
+        <div class="pipeda-item-text">By using GridCoffer you consent to transient, local processing of your file. A clear privacy policy governs all data handling.</div>
+      </div>
+      <div class="pipeda-item">
+        <div class="pipeda-item-title">Safeguarded Processing</div>
+        <div class="pipeda-item-text">PDF content is processed in your browser only. It is never uploaded, transmitted, stored, or accessible by GridCoffer or any third party.</div>
+      </div>
+    </div>
+    <div class="pipeda-foot">
+      <p class="pipeda-note">GridCoffer's "no data stored" position aligns directly with PIPEDA's data minimization principle. Even transient processing of personal information (names, financials, identifiers inside PDFs) is covered &mdash; which is why we process everything locally.</p>
+      <button class="btn-policy" id="btn-open-privacy">Read Privacy Policy &rarr;</button>
+    </div>
+  </section>
+
+  <!-- FOOTER -->
+  <footer>
+    <div class="foot-brand">Grid<em>Coffer</em></div>
+    <div class="foot-links">
+      <span class="foot-link" id="foot-privacy">Privacy Policy</span>
+      <span class="foot-link" id="foot-pipeda">PIPEDA Statement</span>
+      <a class="foot-link" href="https://mozilla.github.io/pdf.js/" target="_blank">PDF.js</a>
+      <a class="foot-link" href="https://sheetjs.com/" target="_blank">SheetJS</a>
+    </div>
+    <div class="foot-ver">v4.0 &middot; 2025 &middot; Canada</div>
+  </footer>
+
+</div><!-- /page -->
+
+
+<!-- PAYWALL MODAL -->
+<div class="modal-overlay" id="paywall-modal">
+  <div class="paywall-card">
+    <button class="modal-x" id="pw-close" aria-label="Close">&times;</button>
+    <div class="pw-icon">&#x2726;</div>
+    <div class="pw-title">Upgrade to GridCoffer Pro</div>
+    <div class="pw-reason" id="pw-reason"></div>
+
+    <div class="billing-seg">
+      <button class="bill-btn active" id="bill-monthly" data-period="monthly">Monthly</button>
+      <button class="bill-btn" id="bill-annual" data-period="annual">Annual <span class="save-tag">Save 17%</span></button>
+    </div>
+
+    <div class="price-block">
+      <div class="price-main" id="pw-price-main">$19.99 CAD</div>
+      <div class="price-sub"  id="pw-price-sub">per month, billed monthly &mdash; cancel anytime</div>
+    </div>
+
+    <table class="feat-table">
+      <thead>
+        <tr>
+          <th>Feature</th>
+          <th>Free</th>
+          <th class="pro-col">Pro</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td>Files per batch</td>         <td>1</td>              <td class="feat-val-pro">5</td></tr>
+        <tr><td>Max file size</td>           <td>5 MB</td>           <td class="feat-val-pro">15 MB</td></tr>
+        <tr><td>Max pages per batch</td>     <td>10</td>             <td class="feat-val-pro">250</td></tr>
+        <tr><td>Text PDF extraction</td>     <td class="feat-check">&#x2713;</td><td class="feat-check feat-val-pro">&#x2713;</td></tr>
+        <tr><td>OCR (scanned PDFs)</td>      <td class="feat-dash">&mdash;</td>  <td class="feat-check feat-val-pro">&#x2713;</td></tr>
+        <tr><td>Password-protected PDFs</td> <td class="feat-check">&#x2713;</td><td class="feat-check feat-val-pro">&#x2713;</td></tr>
+        <tr><td>Batches per 5 minutes</td>   <td>1</td>              <td class="feat-val-pro">3</td></tr>
+        <tr><td>Batches per hour</td>        <td>3</td>              <td class="feat-val-pro">15</td></tr>
+        <tr><td>Batch timeout protection</td><td class="feat-dash">&mdash;</td>  <td class="feat-val-pro">5 min + partial</td></tr>
+      </tbody>
+    </table>
+
+    <button class="btn-upgrade" id="btn-upgrade">Upgrade to Pro &rarr;</button>
+    <button class="btn-stay-free" id="btn-stay-free">Continue on Free</button>
+    <p class="stripe-note">Secure checkout via Stripe &middot; Cancel anytime &middot; CAD pricing</p>
+  </div>
+</div>
+
+<!-- PASSWORD MODAL -->
+<div class="modal-overlay" id="pwd-modal">
+  <div class="pwd-card">
+    <button class="modal-x" id="pwd-close" aria-label="Close">&times;</button>
+    <div class="pwd-title">Password Protected</div>
+    <div class="pwd-sub">This PDF is encrypted. Enter the password to proceed. It is never transmitted.</div>
+    <div class="pwd-file" id="pwd-file"></div>
+    <div class="pwd-wrap">
+      <input type="password" id="pwd-input" class="pwd-input" placeholder="Document password" autocomplete="off">
+      <button class="pwd-eye" id="pwd-eye" type="button">&#128065;</button>
+    </div>
+    <div class="pwd-error" id="pwd-error">Incorrect password &mdash; please try again.</div>
+    <div class="pwd-actions">
+      <button class="btn-pwd-ok" id="btn-pwd-ok">Unlock &amp; Extract</button>
+      <button class="btn-pwd-cancel" id="btn-pwd-cancel">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<!-- PRIVACY POLICY MODAL -->
+<div class="modal-overlay" id="privacy-modal">
+  <div class="priv-card">
+    <button class="modal-x" id="priv-close" aria-label="Close">&times;</button>
+    <div class="priv-title">Privacy Policy</div>
+    <div class="priv-date">Last updated: April 2025 &middot; GridCoffer</div>
+    <div class="priv-sec">
+      <h3>1. Who We Are</h3>
+      <p>GridCoffer converts PDF files to Excel spreadsheets. This policy covers personal information handling under Canada's PIPEDA.</p>
+    </div>
+    <div class="priv-hr"></div>
+    <div class="priv-sec">
+      <h3>2. What We Collect</h3>
+      <p><strong>PDF content:</strong> Never collected, stored, or transmitted. All processing occurs locally in your browser using PDF.js and SheetJS. Your document never leaves your device.</p>
+      <p><strong>Account &amp; billing (Pro):</strong> Name, email, and payment data are handled by Stripe. GridCoffer receives only a subscription status confirmation &mdash; never raw payment credentials.</p>
+      <p><strong>Usage analytics:</strong> None at this time.</p>
+    </div>
+    <div class="priv-hr"></div>
+    <div class="priv-sec">
+      <h3>3. PIPEDA Compliance</h3>
+      <ul>
+        <li><strong>Accountability:</strong> GridCoffer is responsible for all personal information under its control.</li>
+        <li><strong>Purpose:</strong> Files are processed solely to perform conversion. No secondary use.</li>
+        <li><strong>Consent:</strong> By using GridCoffer you consent to transient local processing of your document.</li>
+        <li><strong>Limiting collection:</strong> No document content is collected.</li>
+        <li><strong>Safeguards:</strong> Processing in-browser means no server-side exposure.</li>
+        <li><strong>Openness:</strong> This policy is publicly accessible at all times.</li>
+        <li><strong>Individual access:</strong> Contact us to access or correct your account data.</li>
+      </ul>
+    </div>
+    <div class="priv-hr"></div>
+    <div class="priv-sec">
+      <h3>4. Transient Processing Note</h3>
+      <p>Even transient in-memory handling of documents containing personal information (names, financial data, health records) is covered by PIPEDA. GridCoffer's local-only model means this data is never accessible to us.</p>
+    </div>
+    <div class="priv-hr"></div>
+    <div class="priv-sec">
+      <h3>5. Third Parties</h3>
+      <ul>
+        <li><strong>Stripe:</strong> Payment processing. <a class="priv-link" href="https://stripe.com/privacy" target="_blank">stripe.com/privacy</a></li>
+        <li><strong>PDF.js (Mozilla):</strong> Runs locally. No data sent to Mozilla.</li>
+        <li><strong>SheetJS:</strong> Runs locally. No data sent externally.</li>
+        <li><strong>Tesseract.js:</strong> OCR for Pro. Runs locally. No data sent externally.</li>
+      </ul>
+    </div>
+    <div class="priv-hr"></div>
+    <div class="priv-sec">
+      <h3>6. Contact</h3>
+      <p>For privacy concerns or data access requests, please reach out through the GridCoffer website contact page.<br>
+      Office of the Privacy Commissioner of Canada: <a class="priv-link" href="https://www.priv.gc.ca" target="_blank">priv.gc.ca</a></p>
+    </div>
+  </div>
+</div>
+
+<!-- CONSENT BANNER -->
+<div id="consent-bar">
+  <div class="consent-inner">
+    <p class="consent-txt">
+      GridCoffer processes your PDFs entirely on-device in accordance with Canada's PIPEDA. No document content is transmitted or stored. By continuing, you consent to transient local processing.
+      <a class="consent-link" id="consent-learn">Learn more &rarr;</a>
+    </p>
+    <div class="consent-btns">
+      <button class="btn-accept"  id="btn-accept">Accept &amp; Continue</button>
+      <button class="btn-decline" id="btn-decline">Decline</button>
+    </div>
+  </div>
+</div>
+
+
+<script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script>
+'use strict';
+
+/* =========================================================
+   CONFIGURATION
+   - Edit PLANS to adjust limits
+   - Edit PRICING to change displayed prices
+   - STRIPE_CONFIG is ready: add publishableKey + priceIds
+     then call handleStripeCheckout() from btn-upgrade handler
+========================================================= */
+var PLANS = {
+  free: {
+    maxFiles:      1,
+    maxFileSizeMB: 5,
+    maxPages:      10,
+    ocr:           false,
+    rate:          { per10min: 1, perHour: 3 }
+  },
+  pro: {
+    maxFiles:       5,
+    maxFileSizeMB:  15,
+    maxPages:       250,
+    ocr:            true,
+    batchTimeoutMs: 300000,
+    rate:           { per5min: 3, perHour: 15 }
+  }
+};
+
+var PRICING = {
+  monthly: {
+    main: '$19.99 CAD',
+    sub:  'per month, billed monthly \u2014 cancel anytime'
+  },
+  annual: {
+    main: '$199 CAD',
+    sub:  'per year (approx. $16.58/month \u2014 17% discount)'
+  }
+};
+
+var STRIPE_CONFIG = {
+  publishableKey: '',
+  prices: { monthly: '', annual: '' }
+};
+
+/* =========================================================
+   STATE
+========================================================= */
+var isPro         = false;
+var billingPeriod = 'monthly';
+var queuedFiles   = [];
+var allSheets     = [];
+var workbook      = null;
+var outputFile    = '';
+var isProcessing  = false;
+var pwdResolve    = null;
+var pwdReject     = null;
+
+/* =========================================================
+   PDF.JS WORKER
+========================================================= */
+pdfjsLib.GlobalWorkerOptions.workerSrc =
+  'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+
+/* =========================================================
+   DOM HELPERS
+========================================================= */
+function el(id) { return document.getElementById(id); }
+
+/* =========================================================
+   THEME TOGGLE
+========================================================= */
+var themeCb = el('theme-cb');
+var htmlEl  = document.documentElement;
+
+function applyTheme(t) {
+  htmlEl.setAttribute('data-theme', t);
+  themeCb.checked = (t === 'light');
+  localStorage.setItem('gc_theme', t);
+}
+
+var savedTheme = localStorage.getItem('gc_theme') ||
+  (window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark');
+applyTheme(savedTheme);
+
+themeCb.addEventListener('change', function() {
+  applyTheme(themeCb.checked ? 'light' : 'dark');
+});
+
+/* =========================================================
+   MODAL HELPERS
+========================================================= */
+function openModal(id)  { el(id).classList.add('open'); }
+function closeModal(id) { el(id).classList.remove('open'); }
+
+// Close on overlay click
+['paywall-modal', 'pwd-modal', 'privacy-modal'].forEach(function(id) {
+  el(id).addEventListener('click', function(e) {
+    if (e.target === el(id)) closeModal(id);
+  });
+});
+
+el('pw-close').addEventListener('click',   function() { closeModal('paywall-modal'); });
+el('priv-close').addEventListener('click', function() { closeModal('privacy-modal'); });
+el('pwd-close').addEventListener('click',  function() {
+  closeModal('pwd-modal');
+  if (pwdReject) { pwdReject(new Error('cancelled')); pwdResolve = null; pwdReject = null; }
+});
+
+/* =========================================================
+   PRIVACY / PIPEDA LINKS
+========================================================= */
+function openPrivacy() { openModal('privacy-modal'); }
+
+el('btn-open-privacy').addEventListener('click',  openPrivacy);
+el('foot-privacy').addEventListener('click',      openPrivacy);
+el('foot-pipeda').addEventListener('click',       openPrivacy);
+el('consent-learn').addEventListener('click',     function(e) { e.preventDefault(); openPrivacy(); });
+
+/* =========================================================
+   CONSENT BANNER
+========================================================= */
+function initConsent() {
+  if (!localStorage.getItem('gc_consent')) {
+    el('consent-bar').classList.add('show');
+  }
+}
+
+el('btn-accept').addEventListener('click', function() {
+  localStorage.setItem('gc_consent', 'accepted');
+  el('consent-bar').classList.remove('show');
+});
+
+el('btn-decline').addEventListener('click', function() {
+  localStorage.setItem('gc_consent', 'declined');
+  el('consent-bar').classList.remove('show');
+  showCallout('warn', 'You declined data processing consent. GridCoffer processes only locally \u2014 no data is ever transmitted. You must accept to use the tool.');
+});
+
+initConsent();
+
+/* =========================================================
+   PLAN MANAGEMENT
+========================================================= */
+function updatePlanUI() {
+  var plan = isPro ? PLANS.pro : PLANS.free;
+
+  el('btn-free').classList.toggle('active', !isPro);
+  el('btn-pro').classList.toggle('active',   isPro);
+  el('banner-free-txt').style.display  = isPro ? 'none' : '';
+  el('banner-pro-badge').classList.toggle('show', isPro);
+
+  el('pill-files').textContent = plan.maxFiles + (plan.maxFiles > 1 ? ' files' : ' file') + ' (' + (isPro ? 'Pro' : 'Free') + ')';
+  el('pill-size').textContent  = plan.maxFileSizeMB + ' MB max (' + (isPro ? 'Pro' : 'Free') + ')';
+  el('pill-pages').textContent = plan.maxPages + ' pages max (' + (isPro ? 'Pro' : 'Free') + ')';
+
+  var ocrPill = el('pill-ocr');
+  ocrPill.textContent    = isPro ? 'OCR: Included' : 'OCR: Pro only';
+  ocrPill.style.borderColor = isPro ? 'var(--green)' : 'var(--gold-dim)';
+  ocrPill.style.color       = isPro ? 'var(--green)' : 'var(--gold-dim)';
+
+  el('hero-sub').textContent = isPro
+    ? 'Pro Plan active. Drop up to 5 PDFs \u2014 text, scanned, or password-protected. Batch processed on your device with full OCR support.'
+    : 'Drop a PDF and receive a precisely structured Excel workbook \u2014 each column in its own cell, each page as its own sheet, processed entirely on your device.';
+
+  if (!isPro) clearQueue();
+}
+
+function activatePro() {
+  isPro = true;
+  localStorage.setItem('gc_plan', 'pro');
+  updatePlanUI();
+  closeModal('paywall-modal');
+}
+
+function activateFree() {
+  isPro = false;
+  localStorage.setItem('gc_plan', 'free');
+  updatePlanUI();
+  resetUI();
+}
+
+// Restore plan
+var storedPlan = localStorage.getItem('gc_plan');
+if (storedPlan === 'pro') { isPro = true; }
+updatePlanUI();
+
+// Plan toggle buttons
+el('btn-free').addEventListener('click', function() { if (isPro) activateFree(); });
+el('btn-pro').addEventListener('click',  function() { if (!isPro) showPaywall('Switch to Pro to unlock batch processing, OCR, and higher limits.'); });
+el('btn-see-plans').addEventListener('click', function() { showPaywall(''); });
+el('btn-manage').addEventListener('click',    function() { showPaywall(''); });
+
+/* =========================================================
+   PAYWALL
+========================================================= */
+function showPaywall(reason) {
+  el('pw-reason').textContent = reason || '';
+  refreshPaywallPrice();
+  openModal('paywall-modal');
+}
+
+function refreshPaywallPrice() {
+  var p = PRICING[billingPeriod];
+  el('pw-price-main').textContent = p.main;
+  el('pw-price-sub').textContent  = p.sub;
+}
+
+el('bill-monthly').addEventListener('click', function() {
+  billingPeriod = 'monthly';
+  el('bill-monthly').classList.add('active');
+  el('bill-annual').classList.remove('active');
+  refreshPaywallPrice();
+});
+
+el('bill-annual').addEventListener('click', function() {
+  billingPeriod = 'annual';
+  el('bill-annual').classList.add('active');
+  el('bill-monthly').classList.remove('active');
+  refreshPaywallPrice();
+});
+
+el('btn-stay-free').addEventListener('click', function() { closeModal('paywall-modal'); });
+
+el('btn-upgrade').addEventListener('click', function() {
+  if (STRIPE_CONFIG.publishableKey) {
+    handleStripeCheckout(billingPeriod);
+  } else {
+    // DEMO MODE: direct activation (replace with handleStripeCheckout when Stripe is configured)
+    activatePro();
+  }
+});
+
+/* Stripe integration: set STRIPE_CONFIG.publishableKey and price IDs to go live.
+   Then replace the activatePro() call above with handleStripeCheckout(billingPeriod). */
+function handleStripeCheckout(period) {
+  console.log('[GridCoffer] Stripe checkout - period:', period);
+  // Uncomment and complete when Stripe is configured:
+  // var stripe = Stripe(STRIPE_CONFIG.publishableKey);
+  // fetch('/api/checkout-session', {
+  //   method: 'POST',
+  //   headers: { 'Content-Type': 'application/json' },
+  //   body: JSON.stringify({ priceId: STRIPE_CONFIG.prices[period] })
+  // }).then(function(r) { return r.json(); })
+  //   .then(function(data) { return stripe.redirectToCheckout({ sessionId: data.sessionId }); });
+}
+
+/* =========================================================
+   RATE LIMITERS
+========================================================= */
+var RL = {
+  key: 'gc_rl',
+  getData: function() {
+    try { return JSON.parse(localStorage.getItem(this.key) || '{"b":[]}'); } catch(e) { return {b:[]}; }
+  },
+  save: function(d) { localStorage.setItem(this.key, JSON.stringify(d)); },
+  checkPro: function() {
+    var now = Date.now();
+    var d   = this.getData();
+    d.b = d.b.filter(function(t) { return t > now - 3600000; });
+    this.save(d);
+    var last5 = d.b.filter(function(t) { return t > now - 300000; }).length;
+    if (last5 >= PLANS.pro.rate.per5min) {
+      var oldest = d.b.filter(function(t) { return t > now - 300000; })[0];
+      var wait = Math.ceil((oldest + 300000 - now) / 1000);
+      return { ok: false, msg: 'Rate limit: ' + PLANS.pro.rate.per5min + ' batches per 5 min. Wait ' + wait + 's.' };
+    }
+    if (d.b.length >= PLANS.pro.rate.perHour) {
+      return { ok: false, msg: 'Hourly limit reached (' + PLANS.pro.rate.perHour + ' batches). Try again in about an hour.' };
+    }
+    return { ok: true };
+  },
+  checkFree: function() {
+    var key = 'gc_frl';
+    var now = Date.now();
+    try {
+      var d = JSON.parse(localStorage.getItem(key) || '{"b":[]}');
+      d.b = d.b.filter(function(t) { return t > now - 600000; });
+      if (d.b.length >= PLANS.free.rate.per10min) {
+        var wait = Math.ceil((d.b[0] + 600000 - now) / 1000);
+        return { ok: false, msg: 'Free plan: 1 conversion per 10 minutes. Wait ' + wait + 's or upgrade to Pro.' };
+      }
+      return { ok: true };
+    } catch(e) { return { ok: true }; }
+  },
+  record: function() {
+    var d = this.getData();
+    d.b.push(Date.now());
+    this.save(d);
+  },
+  recordFree: function() {
+    var key = 'gc_frl';
+    try {
+      var d = JSON.parse(localStorage.getItem(key) || '{"b":[]}');
+      d.b.push(Date.now());
+      localStorage.setItem(key, JSON.stringify(d));
+    } catch(e) {}
+  }
+};
+
+/* =========================================================
+   FILE VALIDATION
+========================================================= */
+function validateFiles(files) {
+  var plan = isPro ? PLANS.pro : PLANS.free;
+  if (files.length > plan.maxFiles) {
+    return {
+      ok: false,
+      paywall: !isPro,
+      msg: 'You selected ' + files.length + ' files. The ' + (isPro ? 'Pro' : 'Free') +
+           ' plan supports up to ' + plan.maxFiles + (plan.maxFiles > 1 ? ' files' : ' file') + ' per batch.'
+    };
+  }
+  for (var i = 0; i < files.length; i++) {
+    var sizeMB = files[i].size / 1048576;
+    if (sizeMB > plan.maxFileSizeMB) {
+      return {
+        ok: false,
+        paywall: !isPro,
+        msg: '"' + files[i].name + '" is ' + sizeMB.toFixed(1) + ' MB. ' +
+             (isPro ? 'Pro' : 'Free') + ' plan supports files up to ' + plan.maxFileSizeMB + ' MB.'
+      };
+    }
+  }
+  return { ok: true };
+}
+
+/* =========================================================
+   DRAG & DROP
+========================================================= */
+var dropzone  = el('dropzone');
+var fileInput = el('file-input');
+
+dropzone.addEventListener('dragover', function(e) {
+  e.preventDefault();
+  dropzone.classList.add('over');
+});
+dropzone.addEventListener('dragleave', function() {
+  dropzone.classList.remove('over');
+});
+dropzone.addEventListener('drop', function(e) {
+  e.preventDefault();
+  dropzone.classList.remove('over');
+  var files = Array.from(e.dataTransfer.files).filter(function(f) {
+    return f.type === 'application/pdf';
+  });
+  if (files.length) handleFilesSelected(files);
+});
+fileInput.addEventListener('change', function() {
+  var files = Array.from(fileInput.files);
+  if (files.length) handleFilesSelected(files);
+  fileInput.value = '';
+});
+
+function handleFilesSelected(files) {
+  var v = validateFiles(files);
+  if (!v.ok) {
+    if (v.paywall) showPaywall(v.msg);
+    else showCallout('err', v.msg);
+    return;
+  }
+  if (isPro && files.length > 1) {
+    files.forEach(function(f) { addToQueue(f); });
+  } else if (isPro && queuedFiles.length > 0) {
+    addToQueue(files[0]);
+  } else {
+    runBatch(files);
+  }
+}
+
+/* =========================================================
+   FILE QUEUE
+========================================================= */
+function addToQueue(file) {
+  if (queuedFiles.length >= PLANS.pro.maxFiles) {
+    showCallout('warn', 'Batch limit: ' + PLANS.pro.maxFiles + ' files max per batch.');
+    return;
+  }
+  queuedFiles.push({ file: file, status: 'pending' });
+  renderQueue();
+  el('file-queue').classList.add('open');
+}
+
+function removeFromQueue(idx) {
+  queuedFiles.splice(idx, 1);
+  renderQueue();
+  if (!queuedFiles.length) el('file-queue').classList.remove('open');
+}
+
+function clearQueue() {
+  // Stop any running batch so async callbacks don't re-render the queue
+  isProcessing = false;
+  queuedFiles  = [];
+  el('file-queue').classList.remove('open');
+  renderQueue();
+  // Hide the processing panel if visible (batch was aborted mid-run)
+  el('proc-panel').style.display = 'none';
+  el('c-err').style.display      = 'none';
+  el('c-warn').style.display     = 'none';
+}
+
+function renderQueue() {
+  el('queue-count').textContent = queuedFiles.length + ' / ' + PLANS.pro.maxFiles + ' files';
+  el('btn-process').disabled = (queuedFiles.length === 0 || isProcessing);
+  var body = el('queue-body');
+  body.innerHTML = '';
+  queuedFiles.forEach(function(item, i) {
+    var div = document.createElement('div');
+    div.className = 'queue-item';
+    var sizeMB = (item.file.size / 1048576).toFixed(1);
+    var statusClass = item.status === 'processing' ? 'processing' :
+                      item.status === 'done'        ? 'done'       :
+                      item.status === 'error'       ? 'err'        : '';
+    div.innerHTML =
+      '<div class="qi-info">' +
+        '<div class="qi-name">' + escHtml(item.file.name) + '</div>' +
+        '<div class="qi-size">' + sizeMB + ' MB</div>' +
+      '</div>' +
+      '<span class="qi-status ' + statusClass + '">' + item.status + '</span>' +
+      (item.status === 'pending' ? '<button class="qi-remove" data-i="' + i + '">&times;</button>' : '');
+    body.appendChild(div);
+  });
+  body.querySelectorAll('.qi-remove').forEach(function(btn) {
+    btn.addEventListener('click', function() {
+      removeFromQueue(parseInt(this.getAttribute('data-i')));
+    });
+  });
+}
+
+el('btn-clear').addEventListener('click', clearQueue);
+el('btn-process').addEventListener('click', function() {
+  if (queuedFiles.length) runBatch(queuedFiles.map(function(q) { return q.file; }));
+});
+
+/* =========================================================
+   LOG & PROGRESS
+========================================================= */
+function fmtTime() {
+  return new Date().toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' });
+}
+
+function log(msg, type) {
+  type = type || 'info';
+  var icons = { ok: '\u25b8', warn: '\u25b2', err: '\u2715', info: '\u00b7' };
+  var row = document.createElement('div');
+  row.className = 'log-row ' + type;
+  row.innerHTML =
+    '<span class="log-ts">' + fmtTime() + '</span>' +
+    '<span class="log-ic">' + (icons[type] || '\u00b7') + '</span>' +
+    '<span class="log-msg">' + escHtml(msg) + '</span>';
+  el('log-box').appendChild(row);
+  el('log-box').scrollTop = el('log-box').scrollHeight;
+}
+
+function setProgress(p) {
+  el('prog-fill').style.width = Math.min(100, Math.max(0, p)) + '%';
+}
+
+function showCallout(type, msg) {
+  if (type === 'err') {
+    el('c-err').textContent  = msg;
+    el('c-err').style.display = 'block';
+  } else {
+    el('c-warn').textContent  = msg;
+    el('c-warn').style.display = 'block';
+  }
+}
+
+/* =========================================================
+   RESET UI
+========================================================= */
+function resetUI() {
+  // Only resets DOM — state vars (workbook, allSheets, isProcessing) are
+  // managed explicitly in runBatch and the btn-another / clearQueue handlers
+  el('proc-mode').textContent     = '';
+  el('log-box').innerHTML         = '';
+  setProgress(0);
+  el('proc-panel').style.display  = 'none';
+  el('preview').style.display     = 'none';
+  el('dl-bar').style.display      = 'none';
+  el('btn-another').style.display = 'none';
+  el('c-err').style.display       = 'none';
+  el('c-warn').style.display      = 'none';
+  el('rate-notice').classList.remove('show');
+}
+
+el('btn-dl').addEventListener('click', function() {
+  if (workbook) XLSX.writeFile(workbook, outputFile);
+});
+
+el('btn-another').addEventListener('click', function() {
+  // Kill any running batch, reset state, clear queue, reset DOM
+  isProcessing = false;
+  allSheets    = [];
+  workbook     = null;
+  clearQueue();
+  resetUI();
+});
+
+/* =========================================================
+   MAIN BATCH RUNNER
+========================================================= */
+function runBatch(files) {
+  if (isProcessing) return;
+
+  if (localStorage.getItem('gc_consent') === 'declined') {
+    showCallout('warn', 'Processing requires consent. Please accept the privacy notice.');
+    el('consent-bar').classList.add('show');
+    return;
+  }
+
+  var rl = isPro ? RL.checkPro() : RL.checkFree();
+  if (!rl.ok) {
+    el('rate-msg').textContent = rl.msg;
+    el('rate-notice').classList.add('show');
+    return;
+  }
+
+  // Reset all state and DOM before starting a new batch
+  isProcessing = false;
+  allSheets    = [];
+  workbook     = null;
+  resetUI();
+
+  // Now initialise for this run — workbook is created AFTER resetUI so it won't be nulled
+  isProcessing = true;
+  allSheets    = [];
+  var usedNames = {};
+  workbook = XLSX.utils.book_new();
+
+  el('proc-panel').style.display = 'block';
+  el('proc-fname').textContent   = files.length > 1 ? files.length + ' files' : files[0].name;
+  outputFile = files.length > 1 ? 'gridcoffer_batch.xlsx' : files[0].name.replace(/\.pdf$/i, '') + '.xlsx';
+
+  var plan       = isPro ? PLANS.pro : PLANS.free;
+  var totalPages = 0;
+  var totalCells = 0;
+  var ocrUsed    = false;
+  var timedOut   = false;
+  var timeout    = null;
+  var sheetIdx   = 0;
+
+  if (isPro) {
+    timeout = setTimeout(function() {
+      timedOut = true;
+      log('Batch timeout (5 min). Saving partial results.', 'warn');
+    }, plan.batchTimeoutMs);
+  }
+
+  log('Starting: ' + files.map(function(f) { return f.name; }).join(', '), 'ok');
+
+  function processNext(fi) {
+    if (fi >= files.length || timedOut) {
+      finish();
+      return;
+    }
+
+    var file = files[fi];
+    if (fi < queuedFiles.length) { queuedFiles[fi].status = 'processing'; renderQueue(); }
+    log('File ' + (fi + 1) + '/' + files.length + ': ' + file.name);
+
+    file.arrayBuffer().then(function(buf) {
+      return loadPDFWithPassword(buf, file.name);
+    }).then(function(pdf) {
+      var n         = pdf.numPages;
+      var maxForFile = Math.min(n, plan.maxPages - totalPages);
+
+      if (maxForFile <= 0) {
+        log('Page limit (' + plan.maxPages + ') reached. Skipping "' + file.name + '".', 'warn');
+        if (!isPro) showPaywall('Free plan limit is ' + PLANS.free.maxPages + ' pages. Pro supports up to ' + PLANS.pro.maxPages + '.');
+        if (fi < queuedFiles.length) { queuedFiles[fi].status = 'error'; renderQueue(); }
+        processNext(fi + 1);
+        return;
+      }
+
+      function processPage(p) {
+        if (p > maxForFile || timedOut) {
+          totalPages += Math.min(p - 1, maxForFile);
+          if (fi < queuedFiles.length) { queuedFiles[fi].status = 'done'; renderQueue(); }
+          log('"' + file.name + '" done', 'ok');
+          processNext(fi + 1);
+          return;
+        }
+
+        setProgress(((fi * n + p - 1) / (files.length * n)) * 80);
+        log('  Page ' + p + '/' + maxForFile);
+
+        pdf.getPage(p).then(function(page) {
+          return extractRowsText(page).then(function(rows) {
+            if (rows.length === 0 && isPro) {
+              log('  Page ' + p + ': no text \u2014 starting OCR', 'warn');
+              el('proc-mode').textContent = '[ OCR ]';
+              ocrUsed = true;
+              return extractRowsOCR(page);
+            }
+            if (rows.length === 0 && !isPro) {
+              closeModal('paywall-modal');
+              isProcessing = false;
+              if (fi < queuedFiles.length) { queuedFiles[fi].status = 'error'; renderQueue(); }
+              showPaywall('This PDF is scanned. OCR processing is a Pro feature.');
+              if (timeout) clearTimeout(timeout);
+              return null;
+            }
+            return rows;
+          });
+        }).then(function(rows) {
+          if (rows === null) return; // paywall triggered
+
+          var sheetName = files.length > 1
+            ? (file.name.replace(/\.pdf$/i, '').slice(0, 18) + '_p' + p)
+            : 'Page ' + p;
+          sheetName = sheetName.slice(0, 31);
+          if (usedNames[sheetName]) { sheetName = sheetName.slice(0, 27) + '_' + sheetIdx; }
+          usedNames[sheetName] = true;
+
+          if (!workbook) { processPage(p + 1); return; } // batch was aborted
+          var ws = XLSX.utils.aoa_to_sheet(rows.length ? rows : [['(no content)']]);
+          fitCols(ws, rows);
+          XLSX.utils.book_append_sheet(workbook, ws, sheetName);
+          allSheets.push({ name: sheetName, rows: rows });
+          totalCells += rows.reduce(function(a, r) { return a + r.length; }, 0);
+          sheetIdx++;
+
+          processPage(p + 1);
+        }).catch(function(e) {
+          log('  Page ' + p + ' error: ' + e.message, 'err');
+          processPage(p + 1);
+        });
+      }
+
+      processPage(1);
+
+    }).catch(function(e) {
+      log('Error with "' + file.name + '": ' + e.message, 'err');
+      if (fi < queuedFiles.length) { queuedFiles[fi].status = 'error'; renderQueue(); }
+      processNext(fi + 1);
+    });
+  }
+
+  function finish() {
+    if (timeout) clearTimeout(timeout);
+    isProcessing = false;
+
+    if (totalCells === 0) {
+      showCallout('err', 'No text could be extracted. The PDF may be fully image-based, or no pages were processed.');
+      return;
+    }
+
+    if (ocrUsed) showCallout('warn', 'One or more pages used OCR (Tesseract.js). Review output for accuracy.');
+
+    setProgress(100);
+    log('Complete. ' + allSheets.length + ' sheets, ' + totalPages + ' pages, ' + totalCells + ' cells.', 'ok');
+
+    if (isPro) RL.record(); else RL.recordFree();
+
+    renderPreview(0);
+    el('preview').style.display = 'block';
+    el('dl-fname').textContent  = outputFile;
+    el('dl-meta').textContent   = allSheets.length + ' sheets \u00b7 ' + totalPages + ' pages \u00b7 ' + totalCells + ' cells' + (ocrUsed ? ' \u00b7 OCR' : '');
+    el('dl-bar').style.display  = 'flex';
+    el('btn-another').style.display = 'inline-block';
+  }
+
+  processNext(0);
+}
+
+/* =========================================================
+   LOAD PDF WITH PASSWORD HANDLING
+========================================================= */
+function loadPDFWithPassword(buffer, filename) {
+  return pdfjsLib.getDocument({ data: buffer }).promise.catch(function(e) {
+    if (e.name === 'PasswordException') {
+      return promptPassword(filename).then(function(pwd) {
+        return pdfjsLib.getDocument({ data: buffer, password: pwd }).promise;
+      });
+    }
+    throw e;
+  });
+}
+
+function promptPassword(filename) {
+  return new Promise(function(resolve, reject) {
+    pwdResolve = resolve;
+    pwdReject  = reject;
+    el('pwd-file').textContent    = filename;
+    el('pwd-input').value         = '';
+    el('pwd-error').style.display = 'none';
+    openModal('pwd-modal');
+    setTimeout(function() { el('pwd-input').focus(); }, 80);
+  });
+}
+
+el('pwd-eye').addEventListener('click', function() {
+  var inp = el('pwd-input');
+  inp.type = inp.type === 'password' ? 'text' : 'password';
+});
+
+el('pwd-input').addEventListener('keydown', function(e) {
+  if (e.key === 'Enter') el('btn-pwd-ok').click();
+});
+
+el('btn-pwd-ok').addEventListener('click', function() {
+  var pwd = el('pwd-input').value.trim();
+  if (!pwd) {
+    el('pwd-error').textContent    = 'Password cannot be empty.';
+    el('pwd-error').style.display  = 'block';
+    return;
+  }
+  el('pwd-error').style.display = 'none';
+  closeModal('pwd-modal');
+  if (pwdResolve) { pwdResolve(pwd); pwdResolve = null; pwdReject = null; }
+});
+
+el('btn-pwd-cancel').addEventListener('click', function() {
+  closeModal('pwd-modal');
+  if (pwdReject) { pwdReject(new Error('cancelled')); pwdResolve = null; pwdReject = null; }
+});
+
+/* =========================================================
+   PDF TEXT EXTRACTION
+========================================================= */
+function extractRowsText(page) {
+  var viewport = page.getViewport({ scale: 1 });
+  var pageW    = viewport.width;
+
+  return page.getTextContent({ includeMarkedContent: false }).then(function(content) {
+    var raw = content.items || [];
+    var items = raw.filter(function(it) {
+      return it.str && it.str.trim();
+    }).map(function(it) {
+      var x = it.transform[4];
+      var y = it.transform[5];
+      var w = (it.width && Math.abs(it.width) > 0.1)
+               ? Math.abs(it.width)
+               : it.str.length * (Math.abs(it.transform[0]) || 6) * 0.55;
+      return { text: it.str, x: x, y: y, w: w, right: x + w };
+    });
+    return buildGrid(items, pageW);
+  });
+}
+
+/* =========================================================
+   OCR FALLBACK (Pro only) - Tesseract.js loaded on demand
+========================================================= */
+function extractRowsOCR(page) {
+  return loadScriptIfNeeded('https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js').then(function() {
+    var scale    = 2.5;
+    var viewport = page.getViewport({ scale: scale });
+    var canvas   = document.createElement('canvas');
+    canvas.width  = viewport.width;
+    canvas.height = viewport.height;
+    var ctx = canvas.getContext('2d');
+    return page.render({ canvasContext: ctx, viewport: viewport }).promise.then(function() {
+      return Tesseract.recognize(canvas, 'eng');
+    }).then(function(result) {
+      var words  = (result.data && result.data.words) || [];
+      var scaleW = viewport.width  / scale;
+      var scaleH = viewport.height / scale;
+      var items  = words.filter(function(w) {
+        return w.text.trim() && w.confidence > 20;
+      }).map(function(w) {
+        return {
+          text:  w.text.trim(),
+          x:     w.bbox.x0 / scale,
+          y:     scaleH - w.bbox.y1 / scale,
+          w:    (w.bbox.x1 - w.bbox.x0) / scale,
+          right: w.bbox.x1 / scale
+        };
+      });
+      return buildGrid(items, scaleW);
+    });
+  });
+}
+
+/* =========================================================
+   GRID BUILDER - shared by text & OCR paths
+========================================================= */
+function buildGrid(items, pageW) {
+  if (!items.length) return [];
+
+  // Estimate row tolerance
+  var heights = items.map(function(it) { return it.w / Math.max(it.text.length, 1) * 1.2; });
+  var rowTol  = Math.max(2, median(heights) * 0.9);
+
+  // Sort top to bottom, left to right
+  items.sort(function(a, b) { return (b.y - a.y) || (a.x - b.x); });
+
+  // Cluster into row buckets
+  var buckets = [];
+  items.forEach(function(t) {
+    var last = buckets[buckets.length - 1];
+    if (last && Math.abs(t.y - last.avgY) <= rowTol) {
+      last.items.push(t);
+      last.avgY = last.items.reduce(function(s, i) { return s + i.y; }, 0) / last.items.length;
+    } else {
+      buckets.push({ avgY: t.y, items: [t] });
+    }
+  });
+  buckets.forEach(function(b) { b.items.sort(function(a, c) { return a.x - c.x; }); });
+
+  // Collect inter-item gaps for threshold detection
+  var allGaps = [];
+  buckets.forEach(function(b) {
+    for (var i = 1; i < b.items.length; i++) {
+      var gap = b.items[i].x - b.items[i - 1].right;
+      if (gap > 0.1) allGaps.push(gap);
+    }
+  });
+
+  var GAP = smartGapThreshold(allGaps, pageW);
+
+  // Split rows into cells
+  var rowsWithPos = [];
+  buckets.forEach(function(b) {
+    if (!b.items.length) return;
+    var cells = [];
+    var cur   = b.items[0].text;
+    var cX    = b.items[0].x;
+    var endX  = b.items[0].right;
+
+    for (var i = 1; i < b.items.length; i++) {
+      var it  = b.items[i];
+      var gap = it.x - endX;
+      if (gap > GAP) {
+        var t = cur.trim();
+        if (t) cells.push({ text: t, x: cX });
+        cur = it.text; cX = it.x;
+      } else {
+        var sp = (gap > 0.5 && !cur.endsWith(' ') && !it.text.startsWith(' ')) ? ' ' : '';
+        cur += sp + it.text;
+      }
+      endX = it.x + it.w;
+    }
+    var last = cur.trim();
+    if (last) cells.push({ text: last, x: cX });
+
+    if (cells.length && cells.some(function(c) { return c.text.trim(); })) {
+      rowsWithPos.push(cells);
+    }
+  });
+
+  if (!rowsWithPos.length) return [];
+
+  // Global column alignment
+  var allX = [];
+  rowsWithPos.forEach(function(row) { row.forEach(function(c) { allX.push(c.x); }); });
+  var cols = clusterPositions(allX, GAP * 0.55);
+
+  var grid = rowsWithPos.map(function(cells) {
+    var sparse = new Array(cols.length).fill('');
+    cells.forEach(function(cell) {
+      var ci = nearestIdx(cols, cell.x);
+      sparse[ci] = sparse[ci] ? sparse[ci] + ' ' + cell.text : cell.text;
+    });
+    return sparse;
+  });
+
+  // Trim trailing empty columns
+  var maxC = 0;
+  grid.forEach(function(r) {
+    for (var i = r.length - 1; i >= 0; i--) {
+      if (r[i] && r[i].trim()) { if (i + 1 > maxC) maxC = i + 1; break; }
+    }
+  });
+
+  return grid
+    .map(function(r) { return r.slice(0, maxC || cols.length); })
+    .filter(function(r) { return r.some(function(c) { return c && c.trim(); }); });
+}
+
+/* =========================================================
+   SMART GAP THRESHOLD
+   Finds the natural break between within-cell spaces
+   and between-column spaces in the gap distribution
+========================================================= */
+function smartGapThreshold(gaps, pageW) {
+  var fallback = pageW * 0.016;
+  if (!gaps.length) return fallback;
+
+  var sorted  = gaps.slice().sort(function(a, b) { return a - b; });
+  var trimmed = sorted.slice(0, Math.floor(sorted.length * 0.96));
+  if (!trimmed.length) return fallback;
+
+  var best = fallback, bestScore = 0;
+  for (var i = 1; i < trimmed.length; i++) {
+    var prev  = trimmed[i - 1];
+    var curr  = trimmed[i];
+    if (prev < 0.4) continue;
+    var ratio = curr / prev;
+    var abs   = curr - prev;
+    var score = ratio * Math.sqrt(abs) * (curr > pageW * 0.009 ? 1.5 : 0.5);
+    if (ratio > 1.55 && score > bestScore) {
+      bestScore = score;
+      best = prev + (curr - prev) * 0.38;
+    }
+  }
+  return Math.max(pageW * 0.007, Math.min(best, pageW * 0.19));
+}
+
+/* =========================================================
+   UTILITIES
+========================================================= */
+function median(arr) {
+  if (!arr.length) return 0;
+  var s = arr.slice().sort(function(a, b) { return a - b; });
+  var m = Math.floor(s.length / 2);
+  return s.length % 2 ? s[m] : (s[m - 1] + s[m]) / 2;
+}
+
+function clusterPositions(pos, tol) {
+  if (!pos.length) return [];
+  var uniq   = [];
+  var seen   = {};
+  pos.forEach(function(p) { var r = Math.round(p * 10) / 10; if (!seen[r]) { seen[r] = true; uniq.push(r); } });
+  uniq.sort(function(a, b) { return a - b; });
+  var cl = [[uniq[0]]];
+  for (var i = 1; i < uniq.length; i++) {
+    var last = cl[cl.length - 1];
+    if (uniq[i] - last[last.length - 1] <= tol) last.push(uniq[i]);
+    else cl.push([uniq[i]]);
+  }
+  return cl.map(function(c) { return c.reduce(function(a, b) { return a + b; }, 0) / c.length; });
+}
+
+function nearestIdx(arr, x) {
+  if (!arr.length) return 0;
+  var best = 0;
+  for (var i = 1; i < arr.length; i++) {
+    if (Math.abs(arr[i] - x) < Math.abs(arr[best] - x)) best = i;
+  }
+  return best;
+}
+
+function fitCols(ws, rows) {
+  if (!rows || !rows.length) return;
+  var mc = Math.max.apply(null, rows.map(function(r) { return r.length; }));
+  var w  = new Array(mc).fill(0);
+  rows.forEach(function(r) {
+    r.forEach(function(c, i) { if (c) w[i] = Math.max(w[i], String(c).length); });
+  });
+  ws['!cols'] = w.map(function(v) { return { wch: Math.min(60, Math.max(8, v + 2)) }; });
+}
+
+function loadScriptIfNeeded(src) {
+  if (window.Tesseract) return Promise.resolve();
+  return new Promise(function(resolve, reject) {
+    var s    = document.createElement('script');
+    s.src    = src;
+    s.onload = resolve;
+    s.onerror = reject;
+    document.head.appendChild(s);
+  });
+}
+
+function escHtml(str) {
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+}
+
+function colLetter(idx) {
+  var n = ''; idx++;
+  while (idx > 0) {
+    n   = String.fromCharCode(64 + (idx % 26 || 26)) + n;
+    idx = Math.floor((idx - 1) / 26);
+  }
+  return n;
+}
+
+/* =========================================================
+   PREVIEW RENDERER
+========================================================= */
+function renderPreview(idx) {
+  var data = allSheets[idx];
+  if (!data) return;
+
+  var tabsEl = el('sheet-tabs');
+  tabsEl.innerHTML = '';
+  allSheets.forEach(function(s, i) {
+    var btn = document.createElement('button');
+    btn.className = 'sheet-tab' + (i === idx ? ' active' : '');
+    btn.textContent = s.name;
+    btn.addEventListener('click', function() { renderPreview(i); });
+    tabsEl.appendChild(btn);
+  });
+
+  var rows = data.rows;
+  var mc   = rows.length ? Math.max.apply(null, rows.map(function(r) { return r.length; })) : 0;
+  var LIM  = 50;
+
+  var thead = el('t-head');
+  thead.innerHTML = '';
+  var hr  = document.createElement('tr');
+  var thN = document.createElement('th');
+  thN.textContent = '#'; thN.style.color = 'var(--muted2)'; hr.appendChild(thN);
+  for (var c = 0; c < mc; c++) {
+    var th = document.createElement('th'); th.textContent = colLetter(c); hr.appendChild(th);
+  }
+  thead.appendChild(hr);
+
+  var tbody = el('t-body');
+  tbody.innerHTML = '';
+
+  if (!rows.length) {
+    var tr = document.createElement('tr');
+    var td = document.createElement('td');
+    td.colSpan = mc + 1;
+    td.style.color = 'var(--muted)';
+    td.textContent = 'No content extracted from this page.';
+    tr.appendChild(td); tbody.appendChild(tr);
+    el('t-meta').textContent = '0 rows';
+    return;
+  }
+
+  rows.slice(0, LIM).forEach(function(row, ri) {
+    var tr2  = document.createElement('tr');
+    var tdN  = document.createElement('td');
+    tdN.textContent  = ri + 1;
+    tdN.style.color  = 'var(--muted2)';
+    tdN.style.userSelect = 'none';
+    tr2.appendChild(tdN);
+    for (var ci = 0; ci < mc; ci++) {
+      var td2 = document.createElement('td');
+      td2.textContent = row[ci] || '';
+      tr2.appendChild(td2);
+    }
+    tbody.appendChild(tr2);
+  });
+
+  var hidden = rows.length - LIM;
+  el('t-meta').textContent = rows.length + ' rows \u00b7 ' + mc + ' columns' +
+    (hidden > 0 ? ' \u00b7 +' + hidden + ' rows not shown' : '');
+}
+
+</script>
+</body>
+</html>
